@@ -1,0 +1,7 @@
+main: icu.azim.mapbot.MapBotPlugin
+version: 0.0.1
+author: Azim
+website: https://www.spigotmc.org/members/azim.303457/
+description: Plugin to generate map renders and send them in discord
+name: "MapBot"
+api-version: 1.16
