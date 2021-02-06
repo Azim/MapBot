@@ -84,7 +84,7 @@ public class MapBotPlugin extends JavaPlugin {
 			for(int cz = zmin; cz < zmax; cz++) {
 				if(!world.isChunkGenerated(cx, cz)) {
 					g.setColor(Color.BLACK);
-					g.fillRect(cx*16, cz*16, 16, 16);
+					g.fillRect((cx-xmin)*16, (cz-zmin)*16, 16, 16);
 					continue;
 				}
 				Vector2i chunkVector = new Vector2i(cx, cz);
@@ -134,7 +134,16 @@ public class MapBotPlugin extends JavaPlugin {
 		for(int x = 0; x < 16; x++) {
 			for(int z = 0; z < 16; z++) {
 				int y = getHighestBlock(world, cx*16+x, cz*16+z);
-				int py = (world.isChunkGenerated(cx, (cz*16+z-1)/16))?getHighestBlock(world, cx*16+x, cz*16+z-1):y;//if chunk is generated, access it's highest block, otherwise assume its same height
+				int py = 0;
+				if(z==0) {
+					if(world.isChunkGenerated(cx, cz-1)) {
+						py = getHighestBlock(world, cx*16+x, cz*16+z-1);
+					}else {
+						py = y;
+					}
+				}else {
+					py = getHighestBlock(world, cx*16+x, cz*16+z-1);
+				}
 				int colorOffset = 1;
 				if(y>py) {
 					colorOffset = 2;
