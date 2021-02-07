@@ -89,8 +89,7 @@ public class MapBotPlugin extends JavaPlugin {
 				}
 				Vector2i chunkVector = new Vector2i(cx, cz);
 				if(this.cache.containsKey(chunkVector)) {
-					//g.drawImage(this.cache.get(chunkVector), (cx-xmin)*16, (cz-zmin)*16, null);  //we are now instead drawing on pre-existing cached image; probably should use set of Vector2i instead
-					
+					if(clear) g.drawImage(this.cache.get(chunkVector), (cx-xmin)*16, (cz-zmin)*16, null); //only redraw when we recreate the entire thing
 					System.out.println("Skipping "+chunkVector);
 					continue;
 				}
@@ -106,11 +105,6 @@ public class MapBotPlugin extends JavaPlugin {
 					return null;
 				});
 				futures.add(future);
-				/*
-				BufferedImage piece = generateChunk(world, chunkVector);
-				cache.put(chunkVector, piece);
-				g.drawImage(piece, (cx-xmin)*16, (cz-zmin)*16, null);
-				*/
 			}
 		}
 		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenRunAsync(()-> {
@@ -137,7 +131,7 @@ public class MapBotPlugin extends JavaPlugin {
 				int py = 0;
 				if(z==0) {
 					if(world.isChunkGenerated(cx, cz-1)) {
-						py = getHighestBlock(world, cx*16+x, cz*16+z-1);
+						py = getHighestBlock(world, cx*16+x, cz*16-1);
 					}else {
 						py = y;
 					}
