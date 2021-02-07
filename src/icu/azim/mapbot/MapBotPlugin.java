@@ -11,6 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -25,6 +28,7 @@ public class MapBotPlugin extends JavaPlugin {
 	private ExecutorService executor;
 	public ConcurrentHashMap<Vector2i, BufferedImage> cache = new ConcurrentHashMap<>();
 	public BufferedImage cachedImage;
+	public static long printcount = 1000;
 	
 	@Override
 	public void onEnable() {
@@ -96,15 +100,15 @@ public class MapBotPlugin extends JavaPlugin {
 				
 				int x = (cx-xmin)*16;
 				int y = (cz-zmin)*16;
-				CompletableFuture<Void> future = CompletableFuture.runAsync(()->{
+				//CompletableFuture<Void> future = CompletableFuture.runAsync(()->{
 					BufferedImage piece = generateChunkMap(world, chunkVector);
 					newCache.put(chunkVector, piece);
 					drawChunk(x, y, g, piece);
-				}, executor).exceptionally(e->{
-					e.printStackTrace(); 
-					return null;
-				});
-				futures.add(future);
+				//}, executor).exceptionally(e->{
+					//e.printStackTrace(); 
+					//return null;
+				//});
+				//futures.add(future);
 			}
 		}
 		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenRunAsync(()-> {
@@ -125,18 +129,32 @@ public class MapBotPlugin extends JavaPlugin {
 		BufferedImage piece = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
 		int cx = chunkVector.getX();
 		int cz = chunkVector.getY();
+		System.out.println("before check "+chunkVector);
+		if(!world.isChunkGenerated(cx, cz)) return piece;
+		System.out.println("before chunk");
+		Chunk chunk = world.getChunkAt(cx, cz);
+		System.out.println("before snapshot");
+		ChunkSnapshot snapshot = chunk.getChunkSnapshot(true,false,false);
 		for(int x = 0; x < 16; x++) {
+			System.out.println(" each column");
 			for(int z = 0; z < 16; z++) {
-				int y = getHighestBlock(world, cx*16+x, cz*16+z);
+				System.out.println("  each row");
+				//int y = getHighestBlock(world, cx*16+x, cz*16+z);
+				int y = getHighestBlock(snapshot, x, z);
 				int py = 0;
 				if(z==0) {
 					if(world.isChunkGenerated(cx, cz-1)) {
-						py = getHighestBlock(world, cx*16+x, cz*16-1);
+						Chunk pc = world.getChunkAt(cx, cz-1);
+						ChunkSnapshot ps = pc.getChunkSnapshot(true,false,false);
+						
+						//py = getHighestBlock(world, cx*16+x, cz*16-1);
+						py = getHighestBlock(ps, x, 15);
 					}else {
 						py = y;
 					}
 				}else {
-					py = getHighestBlock(world, cx*16+x, cz*16+z-1);
+					//py = getHighestBlock(world, cx*16+x, cz*16+z-1);
+					py = getHighestBlock(snapshot, x, z-1);
 				}
 				int colorOffset = 1;
 				if(y>py) {
@@ -144,9 +162,12 @@ public class MapBotPlugin extends JavaPlugin {
 				}else if(y<py) {
 					colorOffset = 0;
 				}
-				if(world.getBlockAt(cx*16+x, y, cz*16+z).isLiquid()) {
-					int by = getUnderwaterBlock(world, y, cx*16+x, cz*16+z);
-					double f = by*0.1D + (x+z & 1)*0.2D; //magic numbers
+				
+				if(snapshot.getBlockType(x, y, z)==Material.WATER||snapshot.getBlockType(x, y, z)==Material.LAVA) {
+				//if(world.getBlockAt(cx*16+x, y, cz*16+z).isLiquid()) {
+					//int by = getUnderwaterBlock(world, y, cx*16+x, cz*16+z);
+					int by = getUnderwaterBlock(snapshot, y, x, z);
+					double f = by*0.1D + (x+z & 1)*0.2D; //magic numbers from mc source
 					if(f<0.5D) {
 						colorOffset = 2;
 					}else if(f>0.9D) {
@@ -157,26 +178,51 @@ public class MapBotPlugin extends JavaPlugin {
 				}
 				
 				if(y>0) {
-					try {
-						piece.setRGB(x, z, ColorUtil.getColor(
-							ColorUtil.getColorCode( world.getBlockAt(cx*16+x, y, cz*16+z).getBlockData().getMaterial()), 
-							colorOffset).getRGB());
-					}catch(Exception e) {
-						e.printStackTrace();
-						return piece;
-					}
+					piece.setRGB(x, z, ColorUtil.getColor(
+						ColorUtil.getColorCode( 
+								snapshot.getBlockType(x, y, z)
+								//world.getBlockAt(cx*16+x, y, cz*16+z).getBlockData().getMaterial()
+								), 
+						colorOffset).getRGB());
+				}else {
+					piece.setRGB(x, z, Color.BLACK.getRGB());
 				}
 			}
 		}
 		return piece;
 	}
+
+	private static int getHighestBlock(ChunkSnapshot snapshot, int x, int z) {
+		System.out.println("   sbefore getHighestBlockYAt");
+		int y = snapshot.getHighestBlockYAt(x, z);//this one is the issue
+		System.out.println("   before loop");
+		while((ColorUtil.getColorCode(snapshot.getBlockType(x, y, z))==0) && y>0) {
+			y--;
+		}
+		return y;
+	}
 	
 	private static int getHighestBlock(World world, int x, int z) {
-		int y = world.getHighestBlockYAt(x, z);
+		int y = world.getHighestBlockYAt(x, z);//this one is the issue
 		while((ColorUtil.getColorCode(world.getBlockAt(x, y, z).getBlockData().getMaterial())==0) && y>0) {
 			y--;
 		}
 		return y;
+	}
+
+	private static int getUnderwaterBlock(ChunkSnapshot snapshot, int y, int x, int z) {
+		int w = -1;
+		Material m;
+		do {
+			m = snapshot.getBlockType(x, y--, z);
+			w++;
+		}while(y>0&& m!=Material.LAVA && m!=Material.WATER);
+		
+		/*
+		while(world.getBlockAt(x, y--, z).isLiquid()&&y>0) {
+			w++;
+		}*/
+		return w;
 	}
 	
 	private static int getUnderwaterBlock(World world, int y, int x, int z) {
