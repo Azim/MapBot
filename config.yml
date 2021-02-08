@@ -1,3 +1,20 @@
-token: enter_it_here
-messageid: 0
-cacheinterval: 12000
+bot:
+  token: enter_it_here
+  prefix: 'map'
+cacheinterval: 1200
+autorefresh: 18000
+threads: 4
+map:
+  default-size-x: 64
+  default-size-z: 64
+  max-size-x: 1000
+  max-size-z: 1000
+  default-world: world
+roles:
+  enabled: false
+  fullrender:
+  - 0
+  - 1
+  render:
+  - 0
+  - 1

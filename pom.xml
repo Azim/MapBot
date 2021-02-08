@@ -5,6 +5,9 @@
 	<groupId>icu.azim</groupId>
 	<artifactId>mapbot</artifactId>
 	<version>0.0.1</version>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	<repositories>
 		<repository>
 			<id>jitpack.io</id>
@@ -14,18 +17,22 @@
 			<id>spigot-repo</id>
 			<url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
 		</repository>
+		<repository>
+			<id>papermc</id>
+			<url>https://papermc.io/repo/repository/maven-public/</url>
+		</repository>
 	</repositories>
 	<dependencies>
 
 		<dependency>
 			<groupId>com.github.Azim.libby</groupId>
 			<artifactId>libby-bukkit</artifactId>
-			<version>53954e3276</version>
+			<version>8107184232</version>
 		</dependency>
 		<dependency>
-			<groupId>org.spigotmc</groupId>
-			<artifactId>spigot-api</artifactId>
-			<version>1.16.4-R0.1-SNAPSHOT</version>
+			<groupId>com.destroystokyo.paper</groupId>
+			<artifactId>paper-api</artifactId>
+			<version>1.16.5-R0.1-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -34,6 +41,13 @@
 			<version>3.1.1</version>
 			<scope>provided</scope>
 		</dependency>
+		<!--  
+		<dependency>
+			<groupId>io.papermc</groupId>
+			<artifactId>paperlib</artifactId>
+			<version>1.0.6</version>
+		</dependency>
+		-->
 	</dependencies>
 
 	<build>
@@ -67,7 +81,10 @@
 				<configuration>
 					<ignoreVersions>true</ignoreVersions>
 					<excludes>
+						<exclude>com.destroystokyo.paper:paper-api:whateva</exclude>
 						<exclude>org.spigotmc:spigot-api:whateva</exclude>
+						<exclude>org.spigotmc:spigot:whateva</exclude>
+						<exclude>io.papermc:paperlib:whateva</exclude>
 						<exclude>com.github.Azim.libby:libby-bukkit:whateva</exclude>
 					</excludes>
 				</configuration>
@@ -85,6 +102,12 @@
 				<version>3.2.2</version>
 				<configuration>
 					<dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+					<relocations>
+						<relocation>
+							<pattern>io.papermc.lib</pattern>
+							<shadedPattern>icu.azim.paperlib</shadedPattern>
+						</relocation>
+					</relocations>
 				</configuration>
 				<executions>
 					<execution>

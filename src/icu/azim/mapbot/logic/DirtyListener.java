@@ -12,8 +12,6 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.block.SpongeAbsorbEvent;
-import org.bukkit.event.world.ChunkPopulateEvent;
-
 import icu.azim.mapbot.MapBotPlugin;
 import icu.azim.mapbot.util.Vector2i;
 
@@ -26,7 +24,7 @@ public class DirtyListener implements Listener{
 	public void dirtyEvent(BlockEvent e) {
 		Chunk c = e.getBlock().getChunk();
 		Vector2i v = new Vector2i(c.getX(), c.getZ());
-		plugin.cache.remove(v);
+		plugin.getRenderer().chunkCache.remove(v);
 	}
 	
 	@EventHandler
@@ -61,12 +59,13 @@ public class DirtyListener implements Listener{
 	public void onSpongeAbsorb(SpongeAbsorbEvent e) {
 		dirtyEvent(e);
 	}
+	/*
 	@EventHandler
 	public void onChunkDone(ChunkPopulateEvent e) {
 		Chunk c = e.getChunk();
 		Vector2i v = new Vector2i(c.getX(), c.getZ());
 		System.out.println("populated chunk "+v);
 		//plugin.cache.remove(v);
-		MapBotPlugin.printcount=100;
 	}
+	*/
 }
