@@ -1,7 +1,8 @@
 bot:
   token: enter_it_here
-  prefix: 'map'
-cacheinterval: 1200
+  prefix: 'map '
+  generate-invite: true
+cacheinterval-ms: 300000
 autorefresh: 18000
 threads: 4
 map:

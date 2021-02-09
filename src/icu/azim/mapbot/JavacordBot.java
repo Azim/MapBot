@@ -9,11 +9,10 @@ public class JavacordBot {
 	
 	public JavacordBot(MapBotPlugin plugin) {
 		String token = plugin.getConfig().getString("bot.token");
-		String prefix = plugin.getConfig().getString("bot.prefix");
 		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllNonPrivilegedIntents().login().join();
-		api.addMessageCreateListener(new RenderCommand(plugin, prefix));
-		
-		//Long cacheRate = plugin.getConfig().getLong("cacheinterval", 12000);
-		//Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, ()->{}, cacheRate, cacheRate);
+		api.addMessageCreateListener(new RenderCommand(plugin));
+		if(plugin.getMyConfig().doGenerateInvite()) {
+			plugin.getLogger().info("You can invite the bot using following link: "+api.createBotInvite());
+		}
 	}
 }

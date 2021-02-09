@@ -13,18 +13,47 @@ import java.util.concurrent.Executors;
 
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 
 import icu.azim.mapbot.util.CacheInfo;
 import icu.azim.mapbot.util.ColorUtil;
+import icu.azim.mapbot.util.Config;
+import icu.azim.mapbot.util.Region;
 import icu.azim.mapbot.util.Vector2i;
 
 public class Renderer {
 	private ExecutorService executor;
+	private long cacheLifespan;
 	public ConcurrentHashMap<Vector2i, BufferedImage> chunkCache = new ConcurrentHashMap<>();
-	public ConcurrentHashMap<CacheInfo, BufferedImage> fullCache = new ConcurrentHashMap<>(); //TODO better system for caching i really need to sleep now
-	//public BufferedImage cachedImage;
+	public ConcurrentHashMap<Region, CacheInfo> fullCache = new ConcurrentHashMap<>(); //TODO better system for caching i really need to sleep now
+	
+	public Renderer(Config cfg) {
+		cacheLifespan = cfg.getCacheLifespan();
+	}
+	
+	public BufferedImage fullRender(World world, int maxSizeX, int maxSizeZ, int threads) {
+		WorldBorder border = world.getWorldBorder();
+		Location center = border.getCenter();
+		
+		double width = border.getSize() / 2d;
+		double height = border.getSize() / 2d;
+		if(width>maxSizeX)  width  = maxSizeX;
+		if(height>maxSizeZ) height = maxSizeZ;
+		
+		double bxMin = center.getX() - width;
+		double bzMin = center.getZ() - height;
+		double bxMax = center.getX() + width;
+		double bzMax = center.getZ() + height;
+
+		int xmin = (int) Math.floor(bxMin / 16);
+		int zmin = (int) Math.floor(bzMin / 16);
+		int xmax = (int) Math.ceil(bxMax / 16);
+		int zmax = (int) Math.ceil(bzMax / 16);
+		return render(world, xmin, xmax, zmin, zmax, threads);
+	}
 
 	public BufferedImage render(World world, int xmin, int xmax, int zmin, int zmax, int threads) {
 		executor = Executors.newFixedThreadPool(threads);
@@ -33,23 +62,23 @@ public class Renderer {
 		BufferedImage image = null;
 		int width = Math.abs(xmax-xmin)*16;
 		int height = Math.abs(zmax-zmin)*16;
-		boolean clear = true; //TODO caching 
-		CacheInfo current = new CacheInfo(new Vector2i(xmin, zmin), new Vector2i(xmax, zmax));
-		
-		/*
-		if(cachedImage==null) {
-			image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-			clear = true;
-		}else {
-			if(cachedImage.getWidth()==width && cachedImage.getHeight()==height) {
-				image = copyImage(cachedImage);
-				clear = false;
-			}else {
+		//caching
+		boolean clear; 
+		Region region = new Region(new Vector2i(xmin, zmin), new Vector2i(xmax, zmax));
+		if(fullCache.containsKey(region)) {
+			CacheInfo cacheInfo = fullCache.get(region);
+			if(System.currentTimeMillis()-cacheInfo.getCreationDate()>cacheLifespan) {
+				fullCache.remove(region);
 				image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 				clear = true;
+			}else {
+				image = copyImage(cacheInfo.getData());
+				clear = false;
 			}
-		}*/
-		image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);//TODO caching
+		}else {
+			image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			clear = true;
+		}
 		 
 		Graphics g = image.getGraphics();
 		if(clear) {
@@ -94,7 +123,7 @@ public class Renderer {
 				this.chunkCache.put(key, newCache.get(key));
 			}
 		}).join();
-		//cachedImage = image; //TODO caching
+		fullCache.put(region, new CacheInfo(region, image));
 		System.out.println("Rendered full world in "+(System.currentTimeMillis()-time)+" ms using "+threads+" threads");
 		return image;
 	}

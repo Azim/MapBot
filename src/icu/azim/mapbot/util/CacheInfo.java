@@ -1,34 +1,32 @@
 package icu.azim.mapbot.util;
 
-import java.util.Objects;
+import java.awt.image.BufferedImage;
 
 public class CacheInfo {
-	private Vector2i start, end;
+	private Region region; //redundant?
 	private long creationDate; //explicitly ignored in equals and hashcode checks
+	private BufferedImage cacheData;
 	
-	public CacheInfo(Vector2i start, Vector2i end) {
-		this.start = start;
-		this.end = end;
+	public CacheInfo(Region region, BufferedImage data) {
+		this.region = region;
 		creationDate = System.currentTimeMillis();
+		cacheData = data;
+	}
+	public CacheInfo(Vector2i start, Vector2i end, BufferedImage data) {
+		this.region = new Region(start, end);
+		creationDate = System.currentTimeMillis();
+		cacheData = data;
 	}
 	
 	public long getCreationDate() {
 		return creationDate;
 	}
 	
-	@Override
-	public int hashCode() {
-		return Objects.hash(start, end);
+	public BufferedImage getData() {
+		return cacheData;
 	}
 	
-	@Override
-	public boolean equals(Object obj) {
-		if(obj == this) return true;
-		if(obj instanceof CacheInfo) {
-			CacheInfo v = (CacheInfo) obj;
-			return(v.start==this.start && v.end==this.end);
-		}
-		return false;
+	public Region getRegion() {
+		return region;
 	}
-	
 }

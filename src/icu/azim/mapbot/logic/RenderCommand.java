@@ -12,13 +12,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.javacord.api.util.logging.ExceptionLogger;
 
 import icu.azim.mapbot.MapBotPlugin;
+import icu.azim.mapbot.util.Config;
 import icu.azim.mapbot.util.Vector2i;
 
 public class RenderCommand implements MessageCreateListener {
@@ -30,16 +30,17 @@ public class RenderCommand implements MessageCreateListener {
 	private String defaultWorld;
 	private int defaultSizeX, defaultSizeZ, maxSizeX, maxSizeZ;
 
-	public RenderCommand(MapBotPlugin plugin, String prefix) {
+	public RenderCommand(MapBotPlugin plugin) {
+		Config cfg = plugin.getMyConfig();
 		this.plugin = plugin;
-		this.prefix = prefix;
-		FileConfiguration config = plugin.getConfig();
-		threads = config.getInt("threads", 4);
-		defaultWorld = config.getString("map.default-world","world");
-		defaultSizeX = config.getInt("map.default-size-x", 64);
-		defaultSizeZ = config.getInt("map.default-size-z", 64);
-		maxSizeX = config.getInt("map.max-size-x", 1000);
-		maxSizeZ = config.getInt("map.max-size-z", 1000);
+		this.prefix = cfg.getPrefix();
+		//FileConfiguration config = plugin.getConfig();
+		threads = cfg.getThreads();
+		defaultWorld = cfg.getDefaultWorld();
+		defaultSizeX = cfg.getDefaultSizeX();
+		defaultSizeZ = cfg.getDefaultSizeZ();
+		maxSizeX = cfg.getMaxSizeX();
+		maxSizeZ = cfg.getMaxSizeZ();
 		if(defaultSizeX > maxSizeX) defaultSizeX = maxSizeX;
 		if(defaultSizeZ > maxSizeZ) defaultSizeZ = maxSizeZ;
 		permissions = new PermissionChecker(plugin);
@@ -61,7 +62,6 @@ public class RenderCommand implements MessageCreateListener {
 			}
 			String command = content.substring(prefix.length());
 			String[] parts = command.split(" ");
-
 
 			int xmin, zmin, xmax, zmax;
 			World world = Bukkit.getWorld(defaultWorld);
@@ -178,6 +178,7 @@ public class RenderCommand implements MessageCreateListener {
 				InputStream is = new ByteArrayInputStream(os.toByteArray());
 				event.getChannel().sendMessage(is, "render.png");
 			} catch (IOException e) {
+				event.getChannel().sendMessage("Exception occured while rendering world. Is the area too big?\n`"+e.getMessage()+"`");
 				e.printStackTrace();
 			}
 		});
